@@ -5,6 +5,7 @@ import {
   TextInput,
   TouchableOpacity,
   ToastAndroid,
+  ActivityIndicator,
 } from "react-native";
 import React, { useState } from "react";
 import Colors from "./../utils/Colors";
@@ -20,8 +21,10 @@ export default function AddNewCategory() {
   const [selectedColor, setSelectedColor] = useState(Colors.PURPLE);
   const [categoryName, setCategoryName] = useState();
   const [totalBudget, setTotalBudget] = useState();
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
   const onCreateCategory = async () => {
+    setLoading(true);
     try {
       const user = await client.getUserDetails();
       const { data, error } = await supabase
@@ -44,7 +47,11 @@ export default function AddNewCategory() {
             categoryId: data[0].id,
           },
         });
+        setLoading(false);
         ToastAndroid.show("Category Created!", ToastAndroid.SHORT);
+      }
+      if(error){
+        setLoading(false);
       }
     } catch (error) {
       // Handle any errors here
@@ -92,15 +99,21 @@ export default function AddNewCategory() {
         />
       </View>
       <TouchableOpacity
-        style={styles.Button}
-        disabled={!categoryName || !totalBudget}
+        style={[
+          styles.Button,
+          !categoryName || !totalBudget
+            ? { backgroundColor: Colors.GRAY }
+            : null,
+        ]}
+        disabled={!categoryName || !totalBudget || loading}
         onPress={() => onCreateCategory()}
       >
+        {loading? <ActivityIndicator color={Colors.WHITE}/>:
         <Text
           style={{ textAlign: "center", color: Colors.WHITE, fontSize: 16 }}
         >
           Create
-        </Text>
+        </Text>}
       </TouchableOpacity>
     </View>
   );

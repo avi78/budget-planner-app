@@ -1,11 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ToastAndroid,
+  TouchableOpacity,
+  Alert,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Colors from "../../utils/Colors";
+import { supabase } from "../../utils/SupabaseConfig";
+import { useRouter } from "expo-router";
 
 export default function CourseInfo({ categoryData }) {
   const [totalCost, setTotalCost] = useState(0);
   const [percTotal, setPercTotal] = useState(0);
+  const router = useRouter();
 
   useEffect(() => {
     if (categoryData) {
@@ -19,11 +29,40 @@ export default function CourseInfo({ categoryData }) {
       total += item.cost;
     });
     setTotalCost(total);
-    const perc = (total / categoryData.assigned_budget) * 100;
+    let perc = (total / categoryData.assigned_budget) * 100;
+    if (perc > 100) {
+      perc = 100;
+      ToastAndroid.show("Budget exceeded 100%", ToastAndroid.LONG);
+    }
     setPercTotal(perc);
   };
 
   const { name, assigned_budget, icon, color, CategoryItems } = categoryData;
+  const onDeleteCategory = () => {
+    Alert.alert(
+      "Are you sure you want to delete this category?",
+      "This action cannot be undone",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            const { error } = await supabase
+              .from("CategoryItems")
+              .delete()
+              .eq("category_id", categoryData.id);
+            await supabase.from("Category").delete().eq("id", categoryData.id);
+            ToastAndroid.show('Category deleted!', ToastAndroid.SHORT);
+            router.replace("/(tabs)");
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <View>
@@ -36,10 +75,12 @@ export default function CourseInfo({ categoryData }) {
         <View style={{ flex: 1, marginLeft: 20 }}>
           <Text style={styles.categoryName}>{name}</Text>
           <Text style={styles.categoryItemText}>
-            {CategoryItems?.length || 0} Item
+            {CategoryItems?.length || 0} Item(s)
           </Text>
         </View>
-        <Ionicons name="trash" size={24} color={Colors.BLACK} />
+        <TouchableOpacity onPress={() => onDeleteCategory()}>
+          <Ionicons name="trash" size={24} color={Colors.BLACK} />
+        </TouchableOpacity>
       </View>
       <View style={styles.amountContainer}>
         <Text style={{ fontFamily: "outfit" }}>₹{totalCost}</Text>

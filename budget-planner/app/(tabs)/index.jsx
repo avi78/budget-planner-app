@@ -73,7 +73,7 @@ export default function index() {
           padding:20,
           marginTop:-80
         }}>
-          <CircularChart />
+          <CircularChart categoryList={categoryList} />
           <CategoryList categoryList={categoryList} />
         </View>
       </ScrollView>
